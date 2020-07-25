@@ -1,0 +1,146 @@
+--Sybil Meselebe 
+--DS Track - Assignment 1 
+--Due July 25, 2020 at 2pm
+--SQL Wave Challenge (PostgreSQL)
+
+Understanding the business:
+Wave money transfers work in the following way:
+Money withdrawals and deposits for free. The sender decides who they want to send money to. They enter the beneficiary's name and phone number. They then enter the amount they want to send and pay for the transfer. Wave will convert the money and send it to the beneficiary's mobile wallet.
+
+Obtaining Data:
+Dummy data was used to check and ensure that queries function as expected.
+
+Data Srubbing:
+Data was cleaned and made suitable for the data analysis and upload into our db.
+
+
+
+
+Answering the 10 questions:
+
+--Question 1
+--SELECT COUNT(*) from public.users;
+--SELECT COUNT(u_id) from public.users;
+This counts all 14 users in the table 'users'. 
+
+
+
+
+--Question 2
+SELECT COUNT (transfer_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This provided 2 results of transfers sending money in CFA.
+
+--ignore
+*****SELECT COUNT(transfer_id) FROM public.transfers 
+WHERE receive_amount_currency ='CFA' OR send_amount_currency ='CFA';
+This provided 2 results. Redid it after considering both ends*******
+
+
+
+
+--Question 3
+SELECT COUNT (u_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This shows that there are 2 different users who have made different CFA transfers.
+
+SELECT DISTINCT (u_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This shows me that users with id 403 and 404 have sent a different transfer in CFA each
+
+SELECT COUNT(DISTINCT u_id) FROM public.transfers 
+WHERE send_amount_currency ='CFA';
+This counts each distinct user who transferred in CFA. A more accurate query that achieves both queries above.
+
+
+
+
+--Question 4
+SELECT TO_CHAR(TO_DATE (EXTRACT(MONTH FROM when_created)::text, 'MM'), 'Month')    AS months,
+    COUNT(atx_id) FROM public.agent_transactions
+    WHERE EXTRACT(YEAR FROM agent_transactions.when_created) = 2018
+    GROUP BY EXTRACT(MONTH FROM agent_transactions.when_created);
+
+SELECT COUNT(atx_id) FROM public.agent_transactions
+WHERE EXTRACT(YEAR FROM agent_transactions.when_created) = '2018'
+GROUP BY EXTRACT(MONTH FROM agent_transactions.when_created);
+
+
+
+
+
+--Question 5
+The number of net depositors and The number of net withdrawers are found and compared using the query below:
+SELECT COUNT(agents.agent_id) AS number_net_depositors
+FROM public.agent_transactions, public.agents
+WHERE amount < 0
+AND agent_transactions.agent_id = agents.agent_id
+AND agent_transactions.when_created > current_date - interval '7 days';
+
+
+
+
+--Question 6
+CREATE VIEW atx_volume_city_summary AS SELECT COUNT(atx_id) AS volume, city
+FROM public.agent_transactions, public.agents
+WHERE --agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-11-30 23:59:59'
+agent_transactions.when_created > current_date - interval '7 days'
+GROUP BY city;
+--I first tested based on the data in my database to ensure the query was working thus why the visible dates.
+
+--Alt
+SELECT city, COUNT(atx_id) AS volume
+FROM public.agents, public.agent_transactions
+WHERE agent_transactions.when_created BETWEEN now() And now()-interval'7 days'
+GROUP BY city;
+This is a more accurate query
+
+
+
+
+
+--Question 7
+CREATE VIEW atx_volume_city_country AS SELECT COUNT(atx_id) AS volume, city, country
+FROM public.agent_transactions, public.agents
+WHERE --agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-11-30 23:59:59'
+agent_transactions.when_created > current_date - interval '7 days'
+GROUP BY city, country;
+This display columns of country, city, volume in the views section.
+
+
+
+
+
+--Question 8
+CREATE VIEW send_kind_volume2 AS SELECT COUNT(atx_id) AS volume, kind, country
+FROM public.agent_transactions, public.transfers, public.agents
+WHERE agent_transactions.when_created BETWEEN '2018-11-23' AND '2018-12-30'
+--agent_transactions.when_created>current_date -interval '7 days'
+GROUP BY kind, country;
+This shows the total volume of transfers based on country and transfer kind in a table available in the view section. 
+
+
+
+
+-Question 9
+SELECT DISTINCT COUNT(transfers.source_wallet_id) AS Unique_Senders, 
+COUNT(transfer_id) AS transaction_count, 
+transfers.kind AS transfer_Kind, 
+wallets.ledger_location AS Country, 
+SUM(transfers.send_amount_scalar) AS Volume 
+FROM transfers INNER JOIN wallets ON transfers.source_wallet_id = wallets.wallet_id 
+WHERE (transfers.when_created > (NOW() - INTERVAL '7 days')) 
+GROUP BY wallets.ledger_location, transfers.kind;
+Additional columns were added for transaction count and number if unique senders. These all display perfectly. 
+
+
+
+
+--Question 10
+SELECT source_wallet_id, send_amount_scalar FROM transfers 
+WHERE send_amount_currency = 'CFA' AND (send_amount_scalar>10000000) AND (transfers.when_created > (now() - INTERVAL '1 month'));
+This query also works as expected and displays wallets that sent more than 10000000CFA in the last month and the specific amount sent.
+
+
+Signed,
+Sybil Meselebe
