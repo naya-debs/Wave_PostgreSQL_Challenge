@@ -1,0 +1,123 @@
+#SQL Wave Challenge 
+
+1. SELECT COUNT(u_id) FROM users;
+SELECT * FROM public.users
+ORDER BY u_id ASC 
+Shows 14 users in the table
+SELECT COUNT(*) from public.users; 
+SELECT COUNT(u_id) from public.users;
+THIS GIVES A RESULT OF 14.
+
+2. "Rows with CFA, sent" 
+
+3. "Distinct on userid for CFA"
+
+4. 
+
+5.
+
+6. Temp table
+
+7. 
+
+8.
+
+9.
+
+10.
+
+ALTER TABLE transfers
+ADD CONSTRAINT destination_wallet_id_FK 
+FOREIGN KEY (destination_wallet_id) 
+REFERENCES wallets (wallet_id);
+
+
+
+--Question 1
+--SELECT COUNT(*) from public.users;
+--SELECT COUNT(u_id) from public.users;
+This counts all 14 users in the table users 
+
+--Question 2
+SELECT COUNT (transfer_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This provided 2 results of transfers sending money in CFA.
+
+*****SELECT COUNT(transfer_id) FROM public.transfers 
+WHERE receive_amount_currency ='CFA' OR send_amount_currency ='CFA';
+This provided 2 results. Redid it after considering both ends ****** ignore
+
+--Question 3
+SELECT COUNT (u_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This shows that there are 2 different users who have made different CFA transfers.
+
+SELECT DISTINCT (u_id) from public.transfers 
+WHERE send_amount_currency = 'CFA';
+This shows me that users with id 403 and 404 have sent a different transfer in CFA each
+
+SELECT COUNT(DISTINCT u_id) FROM public.transfers 
+WHERE send_amount_currency ='CFA';
+This counts each distinct user who transferred in CFA
+
+--Question 4
+SELECT COUNT(atx_id) FROM public.agent_transactions
+WHERE EXTRACT(YEAR FROM agent_transactions.when_created) = '2018'
+GROUP BY EXTRACT(MONTH FROM agent_transactions.when_created);
+
+SELECT TO_CHAR(TO_DATE (EXTRACT(MONTH FROM when_created)::text, 'MM'), 'Month')    AS months,
+    COUNT(atx_id) FROM public.agent_transactions
+    WHERE EXTRACT(YEAR FROM agent_transactions.when_created) = 2018
+    GROUP BY EXTRACT(MONTH FROM agent_transactions.when_created);
+
+--Question 5
+The number of net depositors
+The number of net withdrawers
+SELECT COUNT(agents.agent_id) AS number_net_depositors
+FROM public.agent_transactions, public.agents
+WHERE amount < 0
+AND agent_transactions.agent_id = agents.agent_id
+AND agent_transactions.when_created > current_date - interval '7 days';
+
+
+--Question 6
+CREATE VIEW atx_volume_city_summary AS SELECT COUNT(atx_id) AS volume, city
+FROM public.agent_transactions, public.agents
+WHERE --agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-11-30 23:59:59'
+agent_transactions.when_created > current_date - interval '7 days'
+GROUP BY city;
+
+Alt
+SELECT city, COUNT(atx_id) AS volume
+FROM public.agents, public.agent_transactions
+WHERE agent_transactions.when_created BETWEEN now() And now()-interval'7 days'
+GROUP BY city;
+
+--Question 7
+CREATE VIEW atx_volume_city_country AS SELECT COUNT(atx_id) AS volume, city, country
+FROM public.agent_transactions, public.agents
+WHERE --agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-11-30 23:59:59'
+agent_transactions.when_created > current_date - interval '7 days'
+GROUP BY city, country;
+
+--Question 8
+CREATE VIEW send_kind_volume2 AS SELECT COUNT(atx_id) AS volume, kind, country
+FROM public.agent_transactions, public.transfers, public.agents
+WHERE agent_transactions.when_created BETWEEN '2018-11-23' AND '2018-12-30'
+--agent_transactions.when_created>current_date -interval '7 days'
+GROUP BY kind, country;
+
+-Question 9
+SELECT DISTINCT COUNT(transfers.source_wallet_id) AS Unique_Senders, 
+COUNT(transfer_id) AS transaction_count, 
+transfers.kind AS transfer_Kind, 
+wallets.ledger_location AS Country, 
+SUM(transfers.send_amount_scalar) AS Volume 
+FROM transfers INNER JOIN wallets ON transfers.source_wallet_id = wallets.wallet_id 
+WHERE (transfers.when_created > (NOW() - INTERVAL '7 days')) 
+GROUP BY wallets.ledger_location, transfers.kind;
+
+
+--Question 10
+SELECT source_wallet_id, send_amount_scalar FROM transfers 
+WHERE send_amount_currency = 'CFA' AND (send_amount_scalar>10000000) AND (transfers.when_created > (now() - INTERVAL '1 month'));
